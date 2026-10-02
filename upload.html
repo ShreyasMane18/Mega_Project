@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% block title %}Upload dataset{% endblock %}
+{% block body %}<h1>Analyse an examination</h1><p class="muted">Upload the answer-sheet CSV. Columns: student_id, center_id, then one column per question (q1, q2, ...).</p>
+<div class="panel"><form method="post" action="{{ url_for('upload') }}" enctype="multipart/form-data" class="stack">
+<label>Answer sheet data (CSV)<input type="file" name="exam" accept=".csv" required></label>
+<label>Answer key (CSV, optional)<input type="file" name="key" accept=".csv"><small class="muted">One row with q1, q2, ... If left out, the most common answer per question is used.</small></label>
+<button>Run analysis</button></form></div>
+<div class="panel"><h2>Previous analyses</h2>{% if runs %}<div class="scroll"><table><tr><th>Run</th><th>File</th><th>Date</th><th>Students</th><th>High-risk students</th><th>High-risk centres</th><th></th></tr>
+{% for r in runs %}<tr><td>#{{ r.id }}</td><td>{{ r.filename }}</td><td>{{ r.created_at }}</td><td>{{ r.n_students }}</td><td>{{ r.n_high_students }}</td><td>{{ r.n_high_centers }}</td>
+<td><a href="{{ url_for('dashboard', run_id=r.id) }}">Open</a></td></tr>{% endfor %}</table></div>
+{% else %}<p class="muted">No analyses yet. Upload a file above to start.</p>{% endif %}</div>{% endblock %}

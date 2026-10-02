@@ -1,0 +1,41 @@
+{% extends "base.html" %}{% block title %}Run #{{ run.id }}{% endblock %}
+{% block body %}
+<div style="display:flex;justify-content:space-between;align-items:end;flex-wrap:wrap;gap:12px"><div><h1>Results for {{ run.filename }}</h1><span class="muted">Run #{{ run.id }}, {{ run.created_at }}</span></div>
+<a class="btn" href="{{ url_for('pdf', run_id=run.id) }}">Download PDF report</a></div>
+<div class="kpis"><div class="kpi">Students analysed<span>{{ run.n_students }}</span></div><div class="kpi">Centres<span>{{ run.n_centers }}</span></div>
+<div class="kpi bad">High-risk students<span>{{ run.n_high_students }}</span></div><div class="kpi bad">High-risk centres<span>{{ run.n_high_centers }}</span></div></div>
+<div class="grid2"><div class="panel"><h2>Risk score distribution</h2><div id="c1"></div></div><div class="panel"><h2>Riskiest centres</h2><div id="c2"></div></div></div>
+<div class="panel"><h2>Score against identical wrong answers</h2><p class="muted">Students in the top right scored well and share many wrong answers with another student.</p><div id="c3"></div></div>
+<div class="panel"><h2>Highest-risk centres</h2><div class="scroll"><table><tr><th>Centre</th><th>Students</th><th>Avg score</th><th>Flagged %</th><th>Risk</th><th>Level</th></tr>
+{% for c in centers %}<tr><td>{{ c.center_id }}</td><td>{{ c.n_students }}</td><td>{{ '%.1f'|format(c.avg_score) }}</td><td>{{ '%.0f'|format(c.pct_flagged) }}</td><td><span class="meter {{ c.risk_level }}"><i style="width:{{ c.risk_score }}%"></i></span>{{ '%.0f'|format(c.risk_score) }}</td><td class="{{ c.risk_level }}">{{ c.risk_level }}</td></tr>{% endfor %}</table></div></div>
+<div class="panel"><h2>Highest-risk students</h2><div class="scroll"><table><tr><th>Student</th><th>Centre</th><th>Score</th><th>Risk</th><th>Level</th><th>Why flagged</th></tr>
+{% for s in students %}<tr><td><a href="{{ url_for('student', run_id=run.id, sid=s.student_id) }}">{{ s.student_id }}</a></td><td>{{ s.center_id }}</td><td>{{ '%.0f'|format(s.score) }}%</td><td><span class="meter {{ s.risk_level }}"><i style="width:{{ s.risk_score }}%"></i></span>{{ '%.0f'|format(s.risk_score) }}</td><td class="{{ s.risk_level }}">{{ s.risk_level }}</td><td class="wrap">{{ s.reasons }}</td></tr>{% endfor %}</table></div></div>
+<div class="panel"><h2>Most similar answer sheets</h2>{% if pairs %}<div class="scroll"><table><tr><th>Student A</th><th>Student B</th><th>Centre</th><th>Similarity</th><th>Identical wrong answers</th></tr>
+{% for p in pairs %}<tr><td>{{ p.student_a }}</td><td>{{ p.student_b }}</td><td>{{ p.center_id }}</td><td>{{ '%.0f'|format(p.similarity) }}%</td><td>{{ p.same_wrong }}</td></tr>{% endfor %}</table></div>{% else %}<p class="muted">No pairs crossed the similarity thresholds.</p>{% endif %}</div>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<script>
+// Data sent from Python (app.py)
+var risk_scores = {{ risk_scores|tojson }};
+var center_names = {{ center_names|tojson }};
+var center_risks = {{ center_risks|tojson }};
+var center_colors = {{ center_colors|tojson }};
+var scatter_x = {{ scatter_x|tojson }};
+var scatter_y = {{ scatter_y|tojson }};
+var scatter_colors = {{ scatter_colors|tojson }};
+
+// Each chart needs its own new layout (Plotly changes it while drawing)
+function make_layout(x_title, y_title) {
+  return {height: 300, margin: {t: 10, l: 50, r: 10, b: 45},
+          paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
+          xaxis: {title: x_title}, yaxis: {title: y_title}};
+}
+
+// Chart 1: histogram of risk scores
+Plotly.newPlot("c1", [{x: risk_scores, type: "histogram", marker: {color: "#1F4E79"}}], make_layout("Risk score", "Students"));
+
+// Chart 2: bar chart of riskiest centres
+Plotly.newPlot("c2", [{x: center_names, y: center_risks, type: "bar", marker: {color: center_colors}}], make_layout("Centre", "Risk score"));
+
+// Chart 3: score against identical wrong answers
+Plotly.newPlot("c3", [{x: scatter_x, y: scatter_y, mode: "markers", type: "scatter", marker: {color: scatter_colors, size: 6}}], make_layout("Identical wrong answers with one student", "Score (%)"));
+</script>{% endblock %}
