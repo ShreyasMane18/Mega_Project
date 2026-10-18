@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Examination Centers Forensic Audit | Run #{{ run.id }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Examination Center Forensic Ranking</h1>
+    <div class="page-sub">Center-level anomaly evaluation for <b>{{ run.filename }}</b> (Run #{{ run.id }}) &bull; Total Centers: {{ centers|length }}</div>
+  </div>
+  <div style="display: flex; gap: 8px;">
+    <a href="{{ url_for('export_centers', run_id=run.id) }}" class="btn btn-secondary">📥 Export CSV</a>
+    <a href="{{ url_for('dashboard', run_id=run.id) }}" class="btn btn-secondary">&larr; Back to Dashboard</a>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Center ID</th>
+          <th>Examinees</th>
+          <th>Mean Score</th>
+          <th>Top Score</th>
+          <th>Score StdDev (&sigma;)</th>
+          <th>Collusion Rate</th>
+          <th>Mean Similarity</th>
+          <th>Center Risk</th>
+          <th>Risk Tier</th>
+          <th>Forensic Anomaly Justification</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in centers %}
+        <tr>
+          <td>
+            <a href="{{ url_for('center_detail', run_id=run.id, cid=c.center_id) }}">
+              <b>{{ c.center_id }}</b>
+            </a>
+          </td>
+          <td>{{ c.n_students }}</td>
+          <td><b>{{ "%.1f"|format(c.avg_score) }}%</b></td>
+          <td>{{ "%.0f"|format(c.max_score) }}%</td>
+          <td>{{ "%.1f"|format(c.score_std) }}</td>
+          <td>
+            <b {% if c.pct_flagged >= 30 %}style="color: var(--high-red);"{% endif %}>
+              {{ "%.0f"|format(c.pct_flagged) }}%
+            </b>
+          </td>
+          <td>{{ "%.1f"|format(c.mean_similarity) }}%</td>
+          <td>
+            <span class="risk-meter">
+              <span class="risk-meter-fill {{ c.risk_level }}" style="width: {{ c.risk_score }}%;"></span>
+            </span>
+            <b>{{ "%.0f"|format(c.risk_score) }}</b>
+          </td>
+          <td><span class="badge badge-{{ c.risk_level|lower }}">{{ c.risk_level }}</span></td>
+          <td style="font-size: 12.5px; color: #475569; max-width: 300px;">{{ c.reasons }}</td>
+          <td>
+            <a href="{{ url_for('center_detail', run_id=run.id, cid=c.center_id) }}" class="btn btn-sm btn-secondary">
+              Center Dossier &rarr;
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

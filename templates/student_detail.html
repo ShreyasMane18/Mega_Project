@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Examinee Dossier: {{ s.student_id }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">
+      <a href="{{ url_for('students', run_id=run.id) }}">&larr; Examinee Roster</a> / Center <b>{{ s.center_id }}</b>
+    </div>
+    <h1 class="page-title">Candidate Forensic Dossier: {{ s.student_id }}</h1>
+    <div class="page-sub">Comprehensive forensic psychometric breakdown for Run #{{ run.id }} ({{ run.filename }})</div>
+  </div>
+  <div style="display: flex; gap: 8px;">
+    <a href="{{ url_for('students', run_id=run.id) }}" class="btn btn-secondary">All Examinees</a>
+    <a href="{{ url_for('center_detail', run_id=run.id, cid=s.center_id) }}" class="btn btn-secondary">Center {{ s.center_id }}</a>
+  </div>
+</div>
+
+<!-- Candidate KPIs -->
+<div class="kpi-grid">
+  <div class="kpi-card alert-{{ s.risk_level|lower }}">
+    <span class="kpi-label">Forensic Risk Score</span>
+    <span class="kpi-value">{{ "%.0f"|format(s.risk_score) }} <small style="font-size: 14px; font-weight: normal;">({{ s.risk_level }})</small></span>
+  </div>
+  <div class="kpi-card">
+    <span class="kpi-label">Exam Score</span>
+    <span class="kpi-value">{{ "%.0f"|format(s.score) }}%</span>
+  </div>
+  <div class="kpi-card">
+    <span class="kpi-label">Center Z-Deviation</span>
+    <span class="kpi-value">+{{ "%.1f"|format(s.center_z) }}&sigma;</span>
+  </div>
+  <div class="kpi-card">
+    <span class="kpi-label">Collusive Partners</span>
+    <span class="kpi-value">{{ s.n_partners }}</span>
+  </div>
+  <div class="kpi-card alert-{% if s.max_same_wrong >= 6 %}high{% else %}med{% endif %}">
+    <span class="kpi-label">Max Identical Errors (IIR)</span>
+    <span class="kpi-value">{{ s.max_same_wrong }}</span>
+  </div>
+</div>
+
+<!-- Forensic Evidentiary Findings Panel -->
+<div class="panel">
+  <h2 class="panel-title">Forensic Evidentiary Justification</h2>
+  <div style="background: #f8fafc; border-left: 4px solid {% if s.risk_level=='High' %}var(--high-red){% elif s.risk_level=='Medium' %}var(--med-amber){% else %}var(--low-green){% endif %}; padding: 14px 18px; border-radius: 4px;">
+    <div style="font-size: 15px; font-weight: 600; color: #0f172a; margin-bottom: 4px;">
+      Primary Anomaly Indicator:
+    </div>
+    <div style="font-size: 14px; color: #334155;">
+      {{ s.reasons }}
+    </div>
+    <div style="font-size: 12.5px; color: var(--muted); margin-top: 8px;">
+      <b>Statistical Context:</b> The candidate's score is {{ "%.1f"|format(s.center_z) }} standard deviations from the center mean.
+      Maximum pairwise answer overlap with a single peer is {{ "%.1f"|format(s.max_similarity) }}%. Isolation Forest anomaly index: {{ "%.1f"|format(s.anomaly_score) }}/100.
+    </div>
+  </div>
+</div>
+
+<!-- Collusive Partners Table -->
+<div class="panel">
+  <div class="panel-title">
+    <span>Detected Collusion Partners</span>
+    <span class="badge badge-secondary">{{ pairs|length }} Peers</span>
+  </div>
+
+  {% if pairs %}
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Collusion Partner</th>
+          <th>Center</th>
+          <th>Pair Similarity (%)</th>
+          <th>Shared Identical Errors (IIR)</th>
+          <th>Statistical Severity</th>
+          <th>Interactive Answer Matrix</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in pairs %}
+          {% set partner = p.student_b if p.student_a == s.student_id else p.student_a %}
+          <tr>
+            <td>
+              <a href="{{ url_for('student_detail', run_id=run.id, sid=partner) }}">
+                <b>{{ partner }}</b>
+              </a>
+            </td>
+            <td>{{ p.center_id }}</td>
+            <td><b>{{ "%.1f"|format(p.similarity) }}%</b></td>
+            <td>
+              <span class="badge badge-{% if p.same_wrong >= 6 %}high{% else %}med{% endif %}">
+                {{ p.same_wrong }} identical wrong answers
+              </span>
+            </td>
+            <td style="font-size: 12.5px; color: #475569;">
+              {% if p.p_value and p.p_value < 0.0001 %}
+                <b style="color: var(--high-red);">Critical Collusion (p &lt; 10<sup>-4</sup>)</b>
+              {% elif p.p_value and p.p_value < 0.01 %}
+                <b style="color: var(--med-amber);">High Anomaly (p = {{ "%.4f"|format(p.p_value) }})</b>
+              {% elif p.same_wrong >= 6 %}
+                Severe collusion probability
+              {% else %}
+                Elevated response similarity
+              {% endif %}
+            </td>
+            <td>
+              <a href="{{ url_for('pair_compare', run_id=run.id, sid1=s.student_id, sid2=partner) }}" class="btn btn-sm btn-primary">
+                🔍 Compare Sheets Side-by-Side
+              </a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="muted" style="margin: 0; padding: 12px 0;">No single examinee crossed the high-similarity collusion threshold with this candidate.</p>
+  {% endif %}
+</div>
+
+<!-- Raw Response Sheet Inspector (if cached) -->
+{% if answers_str %}
+<div class="panel">
+  <h2 class="panel-title">Recorded Response Sheet ({{ answers_str|length }} Items)</h2>
+  <div style="font-family: monospace; font-size: 14px; letter-spacing: 2px; background: #f8fafc; padding: 14px; border-radius: 6px; border: 1px solid var(--line); word-break: break-all;">
+    {{ answers_str }}
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

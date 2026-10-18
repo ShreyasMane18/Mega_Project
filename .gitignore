@@ -1,0 +1,12 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+data/*.db
+data/uploaded_exam.csv
+static/charts/*.png
+.vscode/
+.idea/

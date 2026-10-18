@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+{% block title %}Forensic Dashboard #{{ run.id }}{% endblock %}
+
+{% block head %}
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Forensic Intelligence Dashboard</h1>
+    <div class="page-sub">Analysis Dossier for <b>{{ run.filename }}</b> &bull; Run #{{ run.id }} &bull; {{ run.created_at }}</div>
+  </div>
+  <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+    <a href="{{ url_for('report_pdf', run_id=run.id) }}" class="btn btn-primary">
+      📄 Download Official PDF Report
+    </a>
+    <a href="{{ url_for('evaluation_view', run_id=run.id) }}" class="btn btn-secondary">
+      📊 Research Benchmarks
+    </a>
+    <a href="{{ url_for('upload') }}" class="btn btn-secondary">
+      + New Analysis
+    </a>
+  </div>
+</div>
+
+<!-- KPI Summary Tiles -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <span class="kpi-label">Examinees Audited</span>
+    <span class="kpi-value">{{ run.n_students }}</span>
+  </div>
+  <div class="kpi-card">
+    <span class="kpi-label">Exam Centers</span>
+    <span class="kpi-value">{{ run.n_centers }}</span>
+  </div>
+  <div class="kpi-card">
+    <span class="kpi-label">Test Items</span>
+    <span class="kpi-value">{{ run.n_questions }}</span>
+  </div>
+  <div class="kpi-card alert-high">
+    <span class="kpi-label">High-Risk Examinees</span>
+    <span class="kpi-value">{{ run.n_high_students }}</span>
+  </div>
+  <div class="kpi-card alert-high">
+    <span class="kpi-label">Compromised Centers</span>
+    <span class="kpi-value">{{ run.n_high_centers }}</span>
+  </div>
+  <div class="kpi-card">
+    <span class="kpi-label">Collusion Pairs</span>
+    <span class="kpi-value">{{ pairs|length }}</span>
+  </div>
+</div>
+
+<!-- Plotly Interactive Visualizations -->
+<div class="grid-2">
+  <div class="panel">
+    <h2 class="panel-title">Forensic Risk Score Distribution</h2>
+    <div id="risk_hist_chart" style="height: 280px;"></div>
+  </div>
+  <div class="panel">
+    <h2 class="panel-title">Examination Center Anomaly Index</h2>
+    <div id="center_bar_chart" style="height: 280px;"></div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-title">
+    <span>Psychometric Collusion Quadrant: Score vs Identical Incorrect Responses (IIR)</span>
+  </div>
+  <p class="muted" style="margin: -6px 0 12px; font-size: 13px;">
+    Examinees in the top-right quadrant achieved high scores while exhibiting high identical errors with peers — mathematically characteristic of collusion.
+  </p>
+  <div id="scatter_chart" style="height: 310px;"></div>
+</div>
+
+<!-- Top Anomalous Centers Table -->
+<div class="panel">
+  <div class="panel-title">
+    <span>Highest-Risk Examination Centers</span>
+    <a href="{{ url_for('centers', run_id=run.id) }}" class="btn btn-sm btn-secondary">View All Centers &rarr;</a>
+  </div>
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Center ID</th>
+          <th>Candidates</th>
+          <th>Mean Score</th>
+          <th>Max Score</th>
+          <th>Collusion Rate</th>
+          <th>Forensic Risk</th>
+          <th>Risk Tier</th>
+          <th>Forensic Justification</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in top_centers %}
+        <tr>
+          <td><a href="{{ url_for('center_detail', run_id=run.id, cid=c.center_id) }}"><b>{{ c.center_id }}</b></a></td>
+          <td>{{ c.n_students }}</td>
+          <td>{{ "%.1f"|format(c.avg_score) }}%</td>
+          <td>{{ "%.0f"|format(c.max_score) }}%</td>
+          <td><b>{{ "%.0f"|format(c.pct_flagged) }}%</b></td>
+          <td>
+            <span class="risk-meter"><span class="risk-meter-fill {{ c.risk_level }}" style="width: {{ c.risk_score }}%;"></span></span>
+            <b>{{ "%.0f"|format(c.risk_score) }}</b>
+          </td>
+          <td><span class="badge badge-{{ c.risk_level|lower }}">{{ c.risk_level }}</span></td>
+          <td style="font-size: 12.5px; color: #475569;">{{ c.reasons }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Top Suspicious Examinees Table -->
+<div class="panel">
+  <div class="panel-title">
+    <span>Priority Examinees Under Investigation</span>
+    <a href="{{ url_for('students', run_id=run.id) }}" class="btn btn-sm btn-secondary">View All Examinees &rarr;</a>
+  </div>
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Candidate ID</th>
+          <th>Center</th>
+          <th>Score</th>
+          <th>Center Z-Dev</th>
+          <th>Identical Wrong (IIR)</th>
+          <th>Collusion Peers</th>
+          <th>Forensic Risk</th>
+          <th>Risk Tier</th>
+          <th>Evidentiary Reason</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in top_students %}
+        <tr>
+          <td><b>{{ s.student_id }}</b></td>
+          <td><a href="{{ url_for('center_detail', run_id=run.id, cid=s.center_id) }}">{{ s.center_id }}</a></td>
+          <td><b>{{ "%.0f"|format(s.score) }}%</b></td>
+          <td>+{{ "%.1f"|format(s.center_z) }}&sigma;</td>
+          <td><span class="badge badge-{% if s.max_same_wrong >= 6 %}high{% else %}med{% endif %}">{{ s.max_same_wrong }}</span></td>
+          <td>{{ s.n_partners }}</td>
+          <td>
+            <span class="risk-meter"><span class="risk-meter-fill {{ s.risk_level }}" style="width: {{ s.risk_score }}%;"></span></span>
+            <b>{{ "%.0f"|format(s.risk_score) }}</b>
+          </td>
+          <td><span class="badge badge-{{ s.risk_level|lower }}">{{ s.risk_level }}</span></td>
+          <td style="font-size: 12.5px; color: #475569; max-width: 280px;">{{ s.reasons }}</td>
+          <td>
+            <a href="{{ url_for('student_detail', run_id=run.id, sid=s.student_id) }}" class="btn btn-sm btn-secondary">Dossier &rarr;</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Top Collusion Pairs Table -->
+{% if pairs %}
+<div class="panel">
+  <div class="panel-title">
+    <span>Most Aberrant Collusion Pairs</span>
+    <a href="{{ url_for('pairs', run_id=run.id) }}" class="btn btn-sm btn-secondary">View All Collusion Pairs &rarr;</a>
+  </div>
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Candidate A</th>
+          <th>Candidate B</th>
+          <th>Center ID</th>
+          <th>Pair Similarity</th>
+          <th>Shared Identical Errors (IIR)</th>
+          <th>Comparative Audit</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in pairs[:10] %}
+        <tr>
+          <td><a href="{{ url_for('student_detail', run_id=run.id, sid=p.student_a) }}"><b>{{ p.student_a }}</b></a></td>
+          <td><a href="{{ url_for('student_detail', run_id=run.id, sid=p.student_b) }}"><b>{{ p.student_b }}</b></a></td>
+          <td>{{ p.center_id }}</td>
+          <td><b>{{ "%.1f"|format(p.similarity) }}%</b></td>
+          <td><span class="badge badge-high">{{ p.same_wrong }} wrong answers</span></td>
+          <td>
+            <a href="{{ url_for('pair_compare', run_id=run.id, sid1=p.student_a, sid2=p.student_b) }}" class="btn btn-sm btn-secondary">
+              🔍 Compare Sheet Matrix
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Plotly Visualizations Initialization
+  var riskScores = {{ chart_data.risk_scores|tojson }};
+  var centerNames = {{ chart_data.center_names|tojson }};
+  var centerRisks = {{ chart_data.center_risks|tojson }};
+  var centerColors = {{ chart_data.center_colors|tojson }};
+  var scatterX = {{ chart_data.scatter_x|tojson }};
+  var scatterY = {{ chart_data.scatter_y|tojson }};
+  var scatterColors = {{ chart_data.scatter_colors|tojson }};
+  var scatterTexts = {{ chart_data.scatter_texts|tojson }};
+
+  var baseLayout = {
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    font: { family: 'Segoe UI, Arial, sans-serif', size: 11, color: '#475569' },
+    margin: { t: 15, l: 45, r: 15, b: 40 },
+  };
+
+  // 1. Risk Histogram
+  Plotly.newPlot('risk_hist_chart', [{
+    x: riskScores,
+    type: 'histogram',
+    marker: { color: '#2563eb', opacity: 0.85, line: { color: '#ffffff', width: 1 } },
+    nbinsx: 20
+  }], Object.assign({}, baseLayout, {
+    xaxis: { title: 'Risk Score (0 - 100)', gridcolor: '#e2e8f0' },
+    yaxis: { title: 'Candidates', gridcolor: '#e2e8f0' }
+  }), { responsive: true, displayModeBar: false });
+
+  // 2. Center Bar Chart
+  Plotly.newPlot('center_bar_chart', [{
+    x: centerNames,
+    y: centerRisks,
+    type: 'bar',
+    marker: { color: centerColors, line: { color: '#0f172a', width: 0.5 } }
+  }], Object.assign({}, baseLayout, {
+    xaxis: { title: 'Examination Center', tickangle: -30, gridcolor: '#e2e8f0' },
+    yaxis: { title: 'Center Risk Score', gridcolor: '#e2e8f0', range: [0, 100] }
+  }), { responsive: true, displayModeBar: false });
+
+  // 3. Collusion Scatter Chart
+  Plotly.newPlot('scatter_chart', [{
+    x: scatterX,
+    y: scatterY,
+    text: scatterTexts,
+    mode: 'markers',
+    type: 'scatter',
+    marker: { color: scatterColors, size: 7, opacity: 0.75, line: { color: '#ffffff', width: 0.5 } }
+  }], Object.assign({}, baseLayout, {
+    xaxis: { title: 'Identical Incorrect Responses (IIR) with Collusion Partner', gridcolor: '#e2e8f0' },
+    yaxis: { title: 'Examinee Score (%)', gridcolor: '#e2e8f0', range: [0, 105] },
+    hovermode: 'closest'
+  }), { responsive: true, displayModeBar: false });
+</script>
+{% endblock %}

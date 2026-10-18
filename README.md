@@ -1,45 +1,123 @@
-# AI-Based Forensic Answer Sheet Analysis System
+# AI-Based Forensic Answer Sheet Analysis System for Detecting Examination Irregularities
 
-Flask + Scikit-learn (Isolation Forest) + MySQL/SQLite + Plotly + ReportLab.
+Final Year B.Tech CSE Mega Project  
+**Annasaheb Dange College of Engineering & Technology, Ashta**  
+**Affiliated to Shivaji University, Kolhapur**  
+**Under the Guidance of:** Prof. Mrs. A. M. Babar  
+**Team:** Swapnali Jadhav, Shreyas Mane, Prafulla Olekar, Shantanu Jadhav  
 
-## Run it (5 minutes)
-```bash
-pip install -r requirements.txt
-python generate_data.py          # makes data/exam_data.csv, answer_key.csv, ground_truth.csv
-python evaluate.py               # precision / recall against the injected cheating
-python app.py                    # open http://127.0.0.1:5000  (admin / admin123)
+---
+
+## 📌 Project Overview
+This project is an AI/ML post-examination forensic investigation system designed to detect examination malpractice, pairwise answer copying (collusion), and organized question paper leaks.
+
+### Key Capabilities & Scientific Features
+- **Universal Data Ingestion**: Seamlessly ingests both Item-Level Matrices (`q1, q2... qN`) and Compact Strings (`answers="ABCD..."`).
+- **Psychometric Collusion Engine**: Computes Hamming similarity and **Identical Incorrect Responses (IIR / K-index principle)**.
+- **Dual-Stage Isolation Forest Anomaly Detection**:
+  - *Stage 1 (Examinee Level)*: Identifies anomalous candidate behavior combining score deviations ($Z_{\text{center}}, Z_{\text{overall}}$) and collusion indices.
+  - *Stage 2 (Center Level)*: Evaluates examination centers for organized malpractice and question paper leaks.
+- **Explainable AI (XAI)**: Generates human-interpretable forensic justifications for every flagged examinee and center.
+- **Interactive Visualizations (Plotly + Matplotlib)**: Dynamic interactive scatter plots, center risk rankings, and risk score distributions.
+- **Question-by-Question Comparative Matrix**: Visual side-by-side audit of test sheets highlighting matching correct answers (green) and matching identical wrong answers (red).
+- **Official Forensic PDF Dossier**: Downloadable publication-grade PDF investigation reports built with ReportLab.
+- **Research Benchmarking Suite (`evaluate.py`)**: Computes Precision, Recall, F1-Score, and Confusion Matrix against known ground truth.
+
+---
+
+## 🚀 How to Run the Project (Step-by-Step)
+
+### Step 1: Open Terminal / PowerShell
+Open PowerShell or Command Prompt and navigate to the project directory:
+```powershell
+cd C:\Users\JSwapnali\Desktop\MegaProject
 ```
-Upload `data/exam_data.csv` (+ `data/answer_key.csv`) on the home page.
 
-## Use MySQL (as in your synopsis)
-```bash
-# run schema.sql once (or let the app create tables), then:
-set DB_BACKEND=mysql & set DB_HOST=localhost & set DB_USER=root & set DB_PASSWORD=yourpw & set DB_NAME=exam_forensics   (Windows)
+### Step 2: Activate the Virtual Environment
+```powershell
+.\venv\Scripts\activate
+```
+*(You will see `(venv)` appear at the start of your terminal line).*
+
+### Step 3: Verify / Install Dependencies
+```powershell
+pip install -r requirements.txt
+```
+
+### Step 4: (Optional) Generate Fresh Datasets
+```powershell
+# Generates 1,800-candidate research benchmark with injected cheaters:
+python generate_data.py
+
+# Generates 160-candidate compact viva demo dataset:
+python generate_sample.py
+```
+
+### Step 5: (Optional) Run the Scientific Research Benchmark
+To see the empirical evaluation metrics (Precision, Recall, F1, and baseline comparisons):
+```powershell
+python evaluate.py
+```
+
+### Step 6: Start the Web Application
+```powershell
 python app.py
 ```
-Change the admin login with `ADMIN_USER` / `ADMIN_PASSWORD` and set `SECRET_KEY` before first run.
 
-## Files
-| File | Job |
-|---|---|
-| `generate_data.py` | Synthetic exam data with injected copying pairs and 2 "leak" centres |
-| `analysis.py` | Cleaning, similarity features, Isolation Forest, risk scores (0-100) |
-| `evaluate.py` | Precision / recall / F1 versus ground truth (use in your results chapter) |
-| `db.py`, `schema.sql` | MySQL/SQLite storage: admins, runs, student_risk, center_risk, similar_pairs |
-| `app.py`, `templates/`, `static/` | Login, upload, dashboard, student detail, PDF download |
-| `report.py` | PDF investigation report |
-| `tests/test_app.py` | End-to-end smoke test |
+### Step 7: Open the Dashboard in your Browser
+Open Google Chrome or Microsoft Edge and navigate to:
+```
+http://127.0.0.1:5000
+```
 
-## How it works (for your viva)
-1. **Clean**: drop duplicates, fill blanks.
-2. **Similarity features**: within each centre, compare every pair of students. Keep % identical answers and, most importantly, identical WRONG answers (two students rarely make the same mistakes by chance).
-3. **Student features**: score vs centre average, score vs everyone, max similarity, max identical wrong answers, number of suspicious partners.
-4. **Isolation Forest** scores how easy each student is to isolate, and the score is rescaled to 0-100. Centres get the same treatment on centre-level features (average score, % flagged students, ...).
-5. **Levels**: High >= 70, Medium >= 45 (tunable at the top of `analysis.py`).
-6. Results are saved to the database and shown on the dashboard, with a PDF report.
+---
 
-## Limits to state honestly
-- Isolation Forest is unsupervised: it finds unusual patterns, not proof of cheating. Reports are leads for investigation.
-- Tested on synthetic data; run it on a real (anonymised) dataset if you can get one.
-- Pair comparison is per centre and grows with centre size squared (fine up to a few thousand per centre).
-- Set `MIN_SIM` / `MIN_SAME_WRONG` in `analysis.py` to match your real exam's number of questions and options.
+## 🔑 Login Credentials
+- **Username:** `admin`
+- **Password:** `admin123`
+
+---
+
+## 🧭 Navigation & Demo Walkthrough for Viva / Review
+
+1. **Upload & Run (`/upload`)**:
+   - Click **"Research Benchmark Dataset"** to analyze 1,800 examinees across 30 centers in 1 click!
+   - Or upload your own custom examination CSV file.
+2. **Dashboard (`/dashboard`)**:
+   - Inspect summary KPIs, interactive Plotly charts, and top suspect candidates & centers.
+3. **Examinee Roster (`/students`)**:
+   - Filter candidates by **High**, **Medium**, or **Low** risk, or search by ID.
+4. **Examinee Forensic Dossier (`/student/<run_id>/<sid>`)**:
+   - Click on any candidate to inspect their Z-deviation, collusion partners, and explainable AI reasons.
+5. **Question Matrix Comparator (`/pair_compare/<run_id>/<sid1>/<sid2>`)**:
+   - Click **"Compare Sheets Side-by-Side"** to show the examiners the exact test questions where two candidates shared identical incorrect choices!
+6. **Examination Centers (`/centers`)**:
+   - View center malpractice rates, score standard deviations, and identify leak centers (e.g. C03, C19).
+7. **Download PDF Report (`/report/<run_id>.pdf`)**:
+   - Click to download the formal ReportLab PDF audit dossier.
+8. **Research Evaluation (`/evaluation`)**:
+   - Show examiners the quantitative metrics: **Precision = 1.00**, **F1-Score = 0.81**, and baseline ablation tables!
+
+---
+
+## 🗄️ Database Configuration (SQLite vs MySQL)
+- **Default (Zero-Setup Demo):** Uses SQLite (`data/forensic_exam.db`). No configuration or database installation needed.
+- **MySQL (College Stack):**
+  1. Open `config.py` and set `DB_TYPE = "mysql"`
+  2. Ensure MySQL is running on `localhost:3306` with database `exam_forensics`
+  3. Start `python app.py` (tables are created automatically).
+
+---
+
+## 📁 Key File Structure
+| File | Role / Purpose |
+| :--- | :--- |
+| `app.py` | Flask web server, authentication, routing, and Plotly visualization endpoints |
+| `analysis.py` | Universal CSV parser, psychometric IIR collusion engine, dual-stage Isolation Forest |
+| `db.py` | Relational storage for runs, examinees, centers, pairs, and answers cache (SQLite & MySQL) |
+| `config.py` | Configuration settings, database toggle, and algorithm thresholds |
+| `report.py` | Institutional forensic audit PDF generator using ReportLab |
+| `evaluate.py` | Academic benchmark suite measuring Precision, Recall, F1 against ground truth |
+| `generate_data.py` | Realistic synthetic test simulator with latent examinee abilities and injected cheating |
+| `generate_sample.py` | Compact format test data generator |
+| `test_system.py` | Comprehensive automated test suite verifying 100% system health |

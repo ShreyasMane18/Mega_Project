@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Collusion Pairs Audit | Run #{{ run.id }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Collusion Pairs Forensic Analysis</h1>
+    <div class="page-sub">Detected pairwise answer concordances for <b>{{ run.filename }}</b> (Run #{{ run.id }}) &bull; Total Pairs: {{ pairs|length }}</div>
+  </div>
+  <div style="display: flex; gap: 8px;">
+    <a href="{{ url_for('dashboard', run_id=run.id) }}" class="btn btn-secondary">&larr; Back to Dashboard</a>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-title">
+    <span>Identified Collusion Pairs Ranked by Shared Incorrect Answers</span>
+    <span class="badge badge-secondary">{{ pairs|length }} Pairs</span>
+  </div>
+
+  {% if pairs %}
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Candidate A</th>
+          <th>Candidate B</th>
+          <th>Center ID</th>
+          <th>Pair Similarity (%)</th>
+          <th>Shared Identical Errors (IIR)</th>
+          <th>Statistical Anomaly Severity</th>
+          <th>Interactive Sheet Audit</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in pairs %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>
+            <a href="{{ url_for('student_detail', run_id=run.id, sid=p.student_a) }}">
+              <b>{{ p.student_a }}</b>
+            </a>
+          </td>
+          <td>
+            <a href="{{ url_for('student_detail', run_id=run.id, sid=p.student_b) }}">
+              <b>{{ p.student_b }}</b>
+            </a>
+          </td>
+          <td>
+            <a href="{{ url_for('center_detail', run_id=run.id, cid=p.center_id) }}">
+              {{ p.center_id }}
+            </a>
+          </td>
+          <td><b>{{ "%.1f"|format(p.similarity) }}%</b></td>
+          <td>
+            <span class="badge badge-{% if p.same_wrong >= 6 %}high{% else %}med{% endif %}">
+              {{ p.same_wrong }} wrong answers
+            </span>
+          </td>
+          <td style="font-size: 12.5px; color: #475569;">
+            {% if p.same_wrong >= 8 %}
+              <span style="color: var(--high-red); font-weight: 600;">Critical Collusion Pattern (p &lt; 10<sup>-5</sup>)</span>
+            {% elif p.same_wrong >= 5 %}
+              <span style="color: var(--med-amber); font-weight: 600;">Strong Concordance Anomaly</span>
+            {% else %}
+              Elevated Pair Similarity
+            {% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('pair_compare', run_id=run.id, sid1=p.student_a, sid2=p.student_b) }}" class="btn btn-sm btn-primary">
+              🔍 Compare Sheet Matrix
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="muted" style="margin: 0; padding: 24px 0; text-align: center;">No examinee pairs crossed the collusion thresholds for this dataset.</p>
+  {% endif %}
+</div>
+{% endblock %}

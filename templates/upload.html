@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Upload Examination Data{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Examination Dataset Ingestion</h1>
+    <div class="page-sub">Upload post-examination response sheets for psychometric and anomaly detection analysis</div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- Upload Card -->
+  <div class="panel">
+    <h2 class="panel-title">Upload Exam Files</h2>
+    
+    <form action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
+      <div class="form-group">
+        <label class="form-label" for="exam_file"><b>1. Student Answer Sheet CSV</b> <span style="color:red">*</span></label>
+        <input class="form-control" type="file" id="exam_file" name="exam" accept=".csv" required>
+        <small class="muted" style="display:block; margin-top:4px;">Accepts wide question matrix (q1..qN) or compact answers string ("ABCD...").</small>
+      </div>
+
+      <div class="form-group" style="margin-top: 18px;">
+        <label class="form-label" for="key_file"><b>2. Answer Key CSV</b> (Optional)</label>
+        <input class="form-control" type="file" id="key_file" name="key" accept=".csv">
+        <small class="muted" style="display:block; margin-top:4px;">If omitted, the system automatically infers correct answers via consensus modal estimation.</small>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="margin-top: 16px; width: 100%; justify-content: center; padding: 11px;">
+        🚀 Upload & Run Forensic Analysis
+      </button>
+    </form>
+  </div>
+
+  <!-- One-Click Preset Datasets -->
+  <div class="panel" style="background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);">
+    <h2 class="panel-title">⚡ Quick Demonstration Datasets</h2>
+    <p class="muted" style="font-size: 13.5px; margin-top: 0;">Instant execution on pre-configured benchmark datasets without manual file selection:</p>
+
+    <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 18px;">
+      <form action="{{ url_for('run_preset') }}" method="post">
+        <input type="hidden" name="preset" value="research">
+        <button type="submit" class="btn btn-secondary" style="width: 100%; justify-content: space-between; padding: 12px 16px; border: 1px solid #93c5fd; background: #eff6ff;">
+          <div style="text-align: left;">
+            <b style="color: #1e40af; font-size: 14px;">🎓 Research Benchmark Dataset</b>
+            <div style="font-size: 12px; color: #475569;">1,800 Candidates &bull; 30 Centers &bull; 60 Questions &bull; Injected Collusion & Leaks</div>
+          </div>
+          <span style="font-size: 18px;">&rarr;</span>
+        </button>
+      </form>
+
+      <form action="{{ url_for('run_preset') }}" method="post">
+        <input type="hidden" name="preset" value="sample">
+        <button type="submit" class="btn btn-secondary" style="width: 100%; justify-content: space-between; padding: 12px 16px;">
+          <div style="text-align: left;">
+            <b style="color: #334155; font-size: 14px;">📄 Compact Viva Sample Dataset</b>
+            <div style="font-size: 12px; color: #64748b;">160 Candidates &bull; 8 Centers &bull; 20 Questions (Compact Format)</div>
+          </div>
+          <span style="font-size: 18px;">&rarr;</span>
+        </button>
+      </form>
+    </div>
+
+    <div style="margin-top: 22px; padding: 12px 14px; background: #fff; border-radius: 6px; border: 1px solid var(--line); font-size: 12px;">
+      <b style="color: #0f172a;">Supported Formats:</b>
+      <ul style="margin: 6px 0 0 16px; padding: 0; color: #475569;">
+        <li><b>Format A (Wide):</b> <code>student_id, center_id, seat_no, q1, q2... qN</code></li>
+        <li><b>Format B (Compact):</b> <code>student_id, center_id, score, answers</code> (e.g. <code>ABCD...</code>)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+{% if recent_runs %}
+<div class="panel">
+  <div class="panel-title">
+    <span>Recent Forensic Analysis Runs</span>
+    <a href="{{ url_for('runs_list') }}" class="btn btn-sm btn-secondary">View All Runs &rarr;</a>
+  </div>
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Run ID</th>
+          <th>Dataset File</th>
+          <th>Analysis Date</th>
+          <th>Examinees</th>
+          <th>Centers</th>
+          <th>High-Risk Examinees</th>
+          <th>High-Risk Centers</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in recent_runs %}
+        <tr>
+          <td><b>#{{ r.id }}</b></td>
+          <td>{{ r.filename }}</td>
+          <td>{{ r.created_at }}</td>
+          <td>{{ r.n_students }}</td>
+          <td>{{ r.n_centers }}</td>
+          <td><span class="badge {% if r.n_high_students > 0 %}badge-high{% else %}badge-low{% endif %}">{{ r.n_high_students }}</span></td>
+          <td><span class="badge {% if r.n_high_centers > 0 %}badge-high{% else %}badge-low{% endif %}">{{ r.n_high_centers }}</span></td>
+          <td>
+            <a href="{{ url_for('dashboard', run_id=r.id) }}" class="btn btn-sm btn-primary">Dashboard</a>
+            <a href="{{ url_for('report_pdf', run_id=r.id) }}" class="btn btn-sm btn-secondary">PDF</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

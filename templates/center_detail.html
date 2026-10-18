@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}Center Dossier: {{ center.center_id }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">
+      <a href="{{ url_for('centers', run_id=run.id) }}">&larr; Center Roster</a> / Center Audit Dossier
+    </div>
+    <h1 class="page-title">Center Forensic Dossier: {{ center.center_id }}</h1>
+    <div class="page-sub">Center-level malpractice and collusion assessment for Run #{{ run.id }} ({{ run.filename }})</div>
+  </div>
+  <div style="display: flex; gap: 8px;">
+    <a href="{{ url_for('centers', run_id=run.id) }}" class="btn btn-secondary">All Centers</a>
+    <a href="{{ url_for('dashboard', run_id=run.id) }}" class="btn btn-secondary">Dashboard</a>
+  </div>
+</div>
+
+<!-- Center KPIs -->
+<div class="kpi-grid">
+  <div class="kpi-card alert-{{ center.risk_level|lower }}">
+    <span class="kpi-label">Center Forensic Risk</span>
+    <span class="kpi-value">{{ "%.0f"|format(center.risk_score) }} <small style="font-size: 14px; font-weight: normal;">({{ center.risk_level }})</small></span>
+  </div>
+  <div class="kpi-card">
+    <span class="kpi-label">Audited Examinees</span>
+    <span class="kpi-value">{{ center.n_students }}</span>
+  </div>
+  <div class="kpi-card">
+    <span class="kpi-label">Center Average Score</span>
+    <span class="kpi-value">{{ "%.1f"|format(center.avg_score) }}%</span>
+  </div>
+  <div class="kpi-card alert-{% if center.pct_flagged >= 30 %}high{% else %}med{% endif %}">
+    <span class="kpi-label">Examinee Collusion Rate</span>
+    <span class="kpi-value">{{ "%.0f"|format(center.pct_flagged) }}%</span>
+  </div>
+  <div class="kpi-card">
+    <span class="kpi-label">Center Score StdDev</span>
+    <span class="kpi-value">{{ "%.1f"|format(center.score_std) }}</span>
+  </div>
+</div>
+
+<!-- Forensic Finding Panel -->
+<div class="panel">
+  <h2 class="panel-title">Center Evidentiary Finding & Assessment</h2>
+  <div style="background: #f8fafc; border-left: 4px solid {% if center.risk_level=='High' %}var(--high-red){% elif center.risk_level=='Medium' %}var(--med-amber){% else %}var(--low-green){% endif %}; padding: 14px 18px; border-radius: 4px;">
+    <div style="font-size: 15px; font-weight: 600; color: #0f172a; margin-bottom: 4px;">
+      Evaluation Summary:
+    </div>
+    <div style="font-size: 14px; color: #334155;">
+      {{ center.reasons }}
+    </div>
+    <div style="font-size: 12.5px; color: var(--muted); margin-top: 8px;">
+      <b>Forensic Context:</b> When an examination center exhibits a disproportionate percentage of examinees with elevated response similarity, accompanied by high mean identical errors, this strongly indicates organized institutional irregularities (such as leaked answer keys, mass whispering, or proxy assistance) rather than isolated pairwise copying.
+    </div>
+  </div>
+</div>
+
+<!-- Intra-Center Collusion Pairs -->
+<div class="panel">
+  <div class="panel-title">
+    <span>Collusion Pairs Within Center {{ center.center_id }}</span>
+    <span class="badge badge-secondary">{{ pairs|length }} Pairs Flagged</span>
+  </div>
+
+  {% if pairs %}
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Candidate A</th>
+          <th>Candidate B</th>
+          <th>Pair Similarity</th>
+          <th>Identical Incorrect Responses (IIR)</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in pairs %}
+        <tr>
+          <td><a href="{{ url_for('student_detail', run_id=run.id, sid=p.student_a) }}"><b>{{ p.student_a }}</b></a></td>
+          <td><a href="{{ url_for('student_detail', run_id=run.id, sid=p.student_b) }}"><b>{{ p.student_b }}</b></a></td>
+          <td><b>{{ "%.1f"|format(p.similarity) }}%</b></td>
+          <td><span class="badge badge-high">{{ p.same_wrong }} identical errors</span></td>
+          <td>
+            <a href="{{ url_for('pair_compare', run_id=run.id, sid1=p.student_a, sid2=p.student_b) }}" class="btn btn-sm btn-secondary">
+              🔍 Compare Sheet Matrix
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="muted" style="margin: 0; padding: 12px 0;">No intra-center collusion pairs detected above the threshold.</p>
+  {% endif %}
+</div>
+
+<!-- Examinee Roster for this Center -->
+<div class="panel">
+  <div class="panel-title">
+    <span>Examinees Seated at Center {{ center.center_id }}</span>
+    <span class="badge badge-secondary">{{ students|length }} Candidates</span>
+  </div>
+
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Candidate ID</th>
+          <th>Score</th>
+          <th>Center $Z$-Dev</th>
+          <th>Max Similarity</th>
+          <th>Identical Wrong (IIR)</th>
+          <th>Collusion Peers</th>
+          <th>Risk Score</th>
+          <th>Risk Tier</th>
+          <th>Evidentiary Reason</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in students %}
+        <tr>
+          <td><a href="{{ url_for('student_detail', run_id=run.id, sid=s.student_id) }}"><b>{{ s.student_id }}</b></a></td>
+          <td><b>{{ "%.0f"|format(s.score) }}%</b></td>
+          <td>+{{ "%.1f"|format(s.center_z) }}&sigma;</td>
+          <td>{{ "%.1f"|format(s.max_similarity) }}%</td>
+          <td>
+            <span class="badge {% if s.max_same_wrong >= 6 %}badge-high{% elif s.max_same_wrong >= 3 %}badge-med{% else %}badge-low{% endif %}">
+              {{ s.max_same_wrong }}
+            </span>
+          </td>
+          <td>{{ s.n_partners }}</td>
+          <td>
+            <span class="risk-meter"><span class="risk-meter-fill {{ s.risk_level }}" style="width: {{ s.risk_score }}%;"></span></span>
+            <b>{{ "%.0f"|format(s.risk_score) }}</b>
+          </td>
+          <td><span class="badge badge-{{ s.risk_level|lower }}">{{ s.risk_level }}</span></td>
+          <td style="font-size: 12px; color: #475569; max-width: 250px;">{{ s.reasons }}</td>
+          <td>
+            <a href="{{ url_for('student_detail', run_id=run.id, sid=s.student_id) }}" class="btn btn-sm btn-secondary">Dossier &rarr;</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

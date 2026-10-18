@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Comparative Matrix: {{ s1_id }} vs {{ s2_id }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">
+      <a href="{{ url_for('pairs', run_id=run.id) }}">&larr; Collusion Pairs</a> / Comparative Forensic Sheet Audit
+    </div>
+    <h1 class="page-title">Question-by-Question Response Audit</h1>
+    <div class="page-sub">Direct item concordance analysis between <b>{{ s1_id }}</b> and <b>{{ s2_id }}</b> (Center {{ center_id }})</div>
+  </div>
+  <div style="display: flex; gap: 8px;">
+    <a href="{{ url_for('student_detail', run_id=run.id, sid=s1_id) }}" class="btn btn-secondary">Candidate {{ s1_id }}</a>
+    <a href="{{ url_for('student_detail', run_id=run.id, sid=s2_id) }}" class="btn btn-secondary">Candidate {{ s2_id }}</a>
+  </div>
+</div>
+
+<!-- Comparison Summary KPIs -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <span class="kpi-label">Pair Similarity</span>
+    <span class="kpi-value">{{ "%.1f"|format(similarity) }}%</span>
+  </div>
+  <div class="kpi-card alert-high">
+    <span class="kpi-label">Identical Wrong (IIR)</span>
+    <span class="kpi-value">{{ same_wrong }}</span>
+  </div>
+  <div class="kpi-card">
+    <span class="kpi-label">Matching Correct</span>
+    <span class="kpi-value">{{ same_correct }}</span>
+  </div>
+  <div class="kpi-card alert-{% if p_value < 0.001 %}high{% else %}med{% endif %}">
+    <span class="kpi-label">Independence p-Value</span>
+    <span class="kpi-value" style="font-size: 22px;">{% if p_value < 0.0001 %}&lt; 10<sup>-4</sup>{% else %}{{ "%.4f"|format(p_value) }}{% endif %}</span>
+  </div>
+  <div class="kpi-card">
+    <span class="kpi-label">Discordant Questions</span>
+    <span class="kpi-value">{{ total_questions - (same_wrong + same_correct) }}</span>
+  </div>
+</div>
+
+<!-- Forensic Legend -->
+<div class="panel" style="padding: 14px 20px;">
+  <div style="display: flex; gap: 24px; flex-wrap: wrap; align-items: center; font-size: 13px;">
+    <span style="font-weight: 600; color: #1e293b;">Legend:</span>
+    <div style="display: flex; align-items: center; gap: 6px;">
+      <span class="q-cell q-match-wrong" style="display: inline-block; width: 24px; height: 24px; padding: 2px;">W</span>
+      <span><b>Identical Incorrect Choice (Collusion Red Flag)</b></span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px;">
+      <span class="q-cell q-match-correct" style="display: inline-block; width: 24px; height: 24px; padding: 2px;">C</span>
+      <span>Matching Correct Choice</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px;">
+      <span class="q-cell q-diff" style="display: inline-block; width: 24px; height: 24px; padding: 2px;">D</span>
+      <span>Discordant / Differing Response</span>
+    </div>
+  </div>
+</div>
+
+<!-- Question Matrix Grid -->
+<div class="panel">
+  <h2 class="panel-title">Item-by-Item Comparative Matrix ({{ total_questions }} Items)</h2>
+  
+  <div class="question-grid">
+    {% for item in matrix %}
+    <div class="q-cell {% if item.match_wrong %}q-match-wrong{% elif item.match_correct %}q-match-correct{% else %}q-diff{% endif %}"
+         title="Q{{ item.q_num }}: {{ s1_id }}={{ item.a1 }}, {{ s2_id }}={{ item.a2 }}, Key={{ item.key }}">
+      <span class="q-num">Q{{ item.q_num }}</span>
+      <span>{{ item.a1 }}/{{ item.a2 }}</span>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div style="margin-top: 24px; padding: 14px; background: #fff1f2; border: 1px solid #fecaca; border-radius: 6px; font-size: 13px; color: #991b1b;">
+    <b>Psychometric Note on Identical Wrong Answers:</b> If two students guess independently on a 4-option multiple-choice question, the probability that both err with the <i>exact same wrong distractor</i> is at most $\frac{3}{16} \approx 0.1875$. Observing <b>{{ same_wrong }}</b> identical incorrect responses yields an independence rejection probability of $p &lt; 10^{-{{ same_wrong }}}$, constituting empirical evidentiary proof of collusion or unauthorized sharing.
+  </div>
+</div>
+
+{% endblock %}

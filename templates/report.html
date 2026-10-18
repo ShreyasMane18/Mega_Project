@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Investigation Report | Run #{{ run.id }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Forensic Investigation Audit Dossier</h1>
+    <div class="page-sub">Comprehensive Post-Examination Report &bull; Run #{{ run.id }} &bull; {{ run.created_at }}</div>
+  </div>
+  <div style="display: flex; gap: 10px;">
+    <a href="{{ url_for('report_pdf', run_id=run.id) }}" class="btn btn-primary">
+      📥 Download Official PDF Dossier
+    </a>
+    <button onclick="window.print()" class="btn btn-secondary">
+      🖨️ Print Report
+    </button>
+  </div>
+</div>
+
+<!-- Report Summary Card -->
+<div class="panel" style="border-top: 4px solid var(--brand);">
+  <h2 class="panel-title" style="margin-bottom: 8px;">Executive Summary</h2>
+  <p style="font-size: 14px; color: #334155; line-height: 1.6; margin-top: 0;">
+    This post-examination forensic audit analyzed <b>{{ run.n_students }}</b> candidates across 
+    <b>{{ run.n_centers }}</b> examination centers evaluating <b>{{ run.n_questions }}</b> items in dataset 
+    <code>{{ run.filename }}</code>. The multi-variate unsupervised anomaly detection pipeline (Dual-Stage Isolation Forest) 
+    identified <b>{{ run.n_high_students }}</b> candidates and <b>{{ run.n_high_centers }}</b> examination centers in the 
+    <b>High-Risk</b> tier (&ge;70/100).
+  </p>
+
+  <div class="kpi-grid" style="margin: 20px 0 10px;">
+    <div class="kpi-card">
+      <span class="kpi-label">Audited Examinees</span>
+      <span class="kpi-value">{{ run.n_students }}</span>
+    </div>
+    <div class="kpi-card alert-high">
+      <span class="kpi-label">High-Risk Candidates</span>
+      <span class="kpi-value">{{ run.n_high_students }}</span>
+    </div>
+    <div class="kpi-card alert-high">
+      <span class="kpi-label">Compromised Centers</span>
+      <span class="kpi-value">{{ run.n_high_centers }}</span>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-label">Collusion Pairs</span>
+      <span class="kpi-value">{{ pairs|length }}</span>
+    </div>
+  </div>
+</div>
+
+<!-- High Risk Centers Table -->
+<div class="panel">
+  <h2 class="panel-title">1. High-Risk Examination Centers</h2>
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Center ID</th>
+          <th>Candidates</th>
+          <th>Mean Score</th>
+          <th>Collusion Rate</th>
+          <th>Risk Score</th>
+          <th>Risk Tier</th>
+          <th>Forensic Anomaly Justification</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in centers if c.risk_level != 'Low' %}
+        <tr>
+          <td><b>{{ c.center_id }}</b></td>
+          <td>{{ c.n_students }}</td>
+          <td>{{ "%.1f"|format(c.avg_score) }}%</td>
+          <td><b>{{ "%.0f"|format(c.pct_flagged) }}%</b></td>
+          <td><b>{{ "%.0f"|format(c.risk_score) }}</b></td>
+          <td><span class="badge badge-{{ c.risk_level|lower }}">{{ c.risk_level }}</span></td>
+          <td style="font-size: 12.5px; color: #475569;">{{ c.reasons }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" style="text-align: center; color: var(--muted); padding: 16px;">No centers flagged above the low risk threshold.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Priority Examinees Table -->
+<div class="panel">
+  <h2 class="panel-title">2. Priority Examinees Recommended for Review</h2>
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Candidate ID</th>
+          <th>Center ID</th>
+          <th>Score</th>
+          <th>Max Similarity</th>
+          <th>Identical Wrong (IIR)</th>
+          <th>Risk Score</th>
+          <th>Risk Tier</th>
+          <th>Evidentiary Justification</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in students[:25] %}
+        <tr>
+          <td><b>{{ s.student_id }}</b></td>
+          <td>{{ s.center_id }}</td>
+          <td><b>{{ "%.0f"|format(s.score) }}%</b></td>
+          <td>{{ "%.1f"|format(s.max_similarity) }}%</td>
+          <td><span class="badge badge-{% if s.max_same_wrong >= 6 %}high{% else %}med{% endif %}">{{ s.max_same_wrong }}</span></td>
+          <td><b>{{ "%.0f"|format(s.risk_score) }}</b></td>
+          <td><span class="badge badge-{{ s.risk_level|lower }}">{{ s.risk_level }}</span></td>
+          <td style="font-size: 12.5px; color: #475569;">{{ s.reasons }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Collusion Pairs Table -->
+<div class="panel">
+  <h2 class="panel-title">3. Critical Examinee Collusion Pairs</h2>
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Candidate A</th>
+          <th>Candidate B</th>
+          <th>Center</th>
+          <th>Pair Similarity (%)</th>
+          <th>Shared Identical Errors (IIR)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in pairs[:20] %}
+        <tr>
+          <td><b>{{ p.student_a }}</b></td>
+          <td><b>{{ p.student_b }}</b></td>
+          <td>{{ p.center_id }}</td>
+          <td><b>{{ "%.1f"|format(p.similarity) }}%</b></td>
+          <td><span class="badge badge-high">{{ p.same_wrong }} identical errors</span></td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" style="text-align: center; color: var(--muted); padding: 16px;">No suspicious pairs detected.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="panel" style="background: #f8fafc; font-size: 12px; color: var(--muted); border: 1px dashed var(--line);">
+  <b>Investigative Protocol Notice:</b> This audit dossier is compiled via unsupervised psychometric machine learning algorithms (Isolation Forest). Statistical anomalies indicate improbable concordance patterns that justify seating arrangement inspection and physical viva examination, not definitive judicial proof of guilt.
+</div>
+{% endblock %}

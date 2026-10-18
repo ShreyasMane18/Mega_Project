@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}AI Forensic Exam Analysis{% endblock %} | Integrity Audit</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  {% if session.get('user') %}
+  <header class="top-header">
+    <div class="brand-box">
+      <div class="brand-icon">⚖️</div>
+      <div>
+        <div class="brand-title">Forensic Exam Analysis</div>
+        <div class="brand-sub">AI-Based Answer Sheet Malpractice Detection</div>
+      </div>
+    </div>
+    <nav class="nav-links">
+      <a href="{{ url_for('dashboard', run_id=active_run_id) if active_run_id else url_for('dashboard') }}" class="{% if request.endpoint in ['dashboard', 'home'] %}active{% endif %}">Dashboard</a>
+      <a href="{{ url_for('upload') }}" class="{% if request.endpoint == 'upload' %}active{% endif %}">Upload & Run</a>
+      <a href="{{ url_for('students', run_id=active_run_id) if active_run_id else url_for('students') }}" class="{% if request.endpoint in ['students', 'student_detail'] %}active{% endif %}">Examinees</a>
+      <a href="{{ url_for('centers', run_id=active_run_id) if active_run_id else url_for('centers') }}" class="{% if request.endpoint in ['centers', 'center_detail'] %}active{% endif %}">Centers</a>
+      <a href="{{ url_for('pairs', run_id=active_run_id) if active_run_id else url_for('pairs') }}" class="{% if request.endpoint in ['pairs', 'pair_compare'] %}active{% endif %}">Collusion Pairs</a>
+      <a href="{{ url_for('report_view', run_id=active_run_id) if active_run_id else url_for('report_view') }}" class="{% if request.endpoint == 'report_view' %}active{% endif %}">Report</a>
+      <a href="{{ url_for('evaluation_view', run_id=active_run_id) if active_run_id else url_for('evaluation_view') }}" class="{% if request.endpoint == 'evaluation_view' %}active{% endif %}">Research Benchmark</a>
+      <a href="{{ url_for('paper_view') }}" class="{% if request.endpoint == 'paper_view' %}active{% endif %}">Research Paper</a>
+      <a href="{{ url_for('runs_list') }}" class="{% if request.endpoint == 'runs_list' %}active{% endif %}">Runs</a>
+      <a href="{{ url_for('logout') }}" class="logout">Logout</a>
+    </nav>
+  </header>
+  {% endif %}
+
+  <main class="container">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for msg in messages %}
+          <div class="flash-msg">
+            <span>ℹ️ {{ msg }}</span>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Examinees Forensic Audit | Run #{{ run.id }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Examinee Forensic Audit Roster</h1>
+    <div class="page-sub">Audited candidates for <b>{{ run.filename }}</b> (Run #{{ run.id }}) &bull; Total Candidates: {{ students|length }}</div>
+  </div>
+  <div style="display: flex; gap: 8px;">
+    <a href="{{ url_for('export_students', run_id=run.id) }}" class="btn btn-secondary">📥 Export CSV</a>
+    <a href="{{ url_for('dashboard', run_id=run.id) }}" class="btn btn-secondary">&larr; Back to Dashboard</a>
+  </div>
+</div>
+
+<!-- Search & Filtering Toolbar -->
+<div class="panel" style="padding: 14px 20px; margin-bottom: 20px;">
+  <form method="get" action="{{ url_for('students', run_id=run.id) }}" style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <label class="form-label" style="margin: 0;" for="risk_tier">Risk Tier:</label>
+      <select class="form-control" style="width: auto; padding: 6px 12px;" id="risk_tier" name="risk_level" onchange="this.form.submit()">
+        <option value="" {% if not current_risk %}selected{% endif %}>All Risk Tiers</option>
+        <option value="High" {% if current_risk == 'High' %}selected{% endif %}>High Risk Only</option>
+        <option value="Medium" {% if current_risk == 'Medium' %}selected{% endif %}>Medium Risk</option>
+        <option value="Low" {% if current_risk == 'Low' %}selected{% endif %}>Low Risk</option>
+      </select>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 8px; flex: 1; max-width: 380px;">
+      <label class="form-label" style="margin: 0;" for="search_query">Search:</label>
+      <input class="form-control" type="text" id="search_query" name="search" placeholder="Filter Candidate ID or Center..." value="{{ current_search or '' }}">
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+    {% if current_risk or current_search %}
+      <a href="{{ url_for('students', run_id=run.id) }}" class="btn btn-secondary btn-sm">Reset Filters</a>
+    {% endif %}
+  </form>
+</div>
+
+<!-- Examinee Table -->
+<div class="panel">
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Candidate ID</th>
+          <th>Center ID</th>
+          <th>Score</th>
+          <th>Center $Z$-Dev</th>
+          <th>Max Similarity</th>
+          <th>Identical Wrong (IIR)</th>
+          <th>Collusion Peers</th>
+          <th>IF Anomaly</th>
+          <th>Risk Score</th>
+          <th>Risk Tier</th>
+          <th>Evidentiary Justification</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if students %}
+          {% for s in students %}
+          <tr>
+            <td>
+              <a href="{{ url_for('student_detail', run_id=run.id, sid=s.student_id) }}">
+                <b>{{ s.student_id }}</b>
+              </a>
+            </td>
+            <td>
+              <a href="{{ url_for('center_detail', run_id=run.id, cid=s.center_id) }}">
+                {{ s.center_id }}
+              </a>
+            </td>
+            <td><b>{{ "%.0f"|format(s.score) }}%</b></td>
+            <td>+{{ "%.1f"|format(s.center_z) }}&sigma;</td>
+            <td>{{ "%.1f"|format(s.max_similarity) }}%</td>
+            <td>
+              <span class="badge {% if s.max_same_wrong >= 6 %}badge-high{% elif s.max_same_wrong >= 3 %}badge-med{% else %}badge-low{% endif %}">
+                {{ s.max_same_wrong }}
+              </span>
+            </td>
+            <td>{{ s.n_partners }}</td>
+            <td>{{ "%.1f"|format(s.anomaly_score) }}</td>
+            <td>
+              <span class="risk-meter">
+                <span class="risk-meter-fill {{ s.risk_level }}" style="width: {{ s.risk_score }}%;"></span>
+              </span>
+              <b>{{ "%.0f"|format(s.risk_score) }}</b>
+            </td>
+            <td><span class="badge badge-{{ s.risk_level|lower }}">{{ s.risk_level }}</span></td>
+            <td style="font-size: 12px; color: #475569; max-width: 250px;">{{ s.reasons }}</td>
+            <td>
+              <a href="{{ url_for('student_detail', run_id=run.id, sid=s.student_id) }}" class="btn btn-sm btn-secondary">
+                Dossier &rarr;
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="12" style="text-align: center; padding: 24px; color: var(--muted);">
+              No candidates found matching the active search or filter criteria.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

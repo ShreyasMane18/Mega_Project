@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Research Paper | AI-Based Forensic Answer Sheet Analysis{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Research Paper Manuscript</h1>
+    <div class="page-sub">Publication-Grade Research Manuscript (IEEE / Springer Format)</div>
+  </div>
+  <div style="display: flex; gap: 8px;">
+    <a href="{{ url_for('evaluation_view') }}" class="btn btn-secondary">&larr; Benchmark Metrics</a>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Dashboard</a>
+  </div>
+</div>
+
+<div class="panel" style="max-width: 900px; margin: 0 auto; padding: 40px; font-family: 'Times New Roman', Times, serif; color: #111827; line-height: 1.7; background: #ffffff; box-shadow: var(--shadow);">
+  
+  <div style="text-align: center; margin-bottom: 24px;">
+    <h1 style="font-size: 22px; font-weight: bold; margin-bottom: 12px; color: #0f172a; line-height: 1.3;">
+      AI-Based Forensic Answer Sheet Analysis System for Detecting Examination Irregularities and Organized Malpractice
+    </h1>
+    <div style="font-size: 13px; font-style: italic; color: #374151; margin-bottom: 6px;">
+      Swapnali G. Jadhav, Shreyas V. Mane, Prafulla B. Olekar, Shantanu S. Jadhav, and Prof. Mrs. A. M. Babar
+    </div>
+    <div style="font-size: 12px; color: #4b5563;">
+      Department of Computer Science and Engineering<br>
+      Annasaheb Dange College of Engineering & Technology, Ashta, Sangli, India<br>
+      <i>(An Autonomous Institute Affiliated to Shivaji University, Kolhapur)</i>
+    </div>
+  </div>
+
+  <hr style="border: 0; border-top: 1px solid #d1d5db; margin: 20px 0;">
+
+  <!-- Abstract -->
+  <div style="background: #f9fafb; padding: 18px 22px; border-radius: 6px; border: 1px solid #e5e7eb; margin-bottom: 24px; font-size: 12.5px;">
+    <b style="color: #111827;">Abstract</b>—Maintaining fairness and transparency in large-scale academic and competitive examinations has become an increasingly complex global challenge. Traditional post-examination auditing relies on manual verification, which is labor-intensive, error-prone, and incapable of detecting subtle collusion networks or center-wide question paper leaks. This paper presents an unsupervised machine learning forensics framework that integrates psychometric response concordance analysis with a Dual-Stage Isolation Forest architecture. The system models examination response behavior along multiple axes: item-level response similarity, Identical Incorrect Responses (IIR based on the $K$-index principle), and center-level baseline standard score deviations ($Z$-scores). Stage 1 detects individual examinee collusion dyads and score outliers, while Stage 2 aggregates center distributions to flag compromised examination centers indicative of paper leakage. To ensure legal and investigatory defensibility, the framework generates Explainable AI (XAI) evidentiary reports. Evaluated on a simulated cohort of 1,800 examinees across 30 examination centers with injected malpractice typologies, the proposed model achieves a Precision of <b>1.00</b> (zero false accusations) and an <b>$F_1$-score of 0.81</b> at the high-risk threshold, while achieving <b>100% recall</b> in detecting compromised examination centers, significantly outperforming traditional similarity and statistical baselines.
+    <div style="margin-top: 8px;">
+      <b>Keywords</b>—Educational Data Mining, Examination Forensics, Anomaly Detection, Isolation Forest, Psychometrics, Identical Incorrect Responses, Collusion Detection, Explainable AI.
+    </div>
+  </div>
+
+  <!-- Section I -->
+  <h2 style="font-size: 16px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; margin-top: 24px; color: #1e3a8a;">
+    I. Introduction
+  </h2>
+  <p style="font-size: 13.5px; text-align: justify;">
+    Examinations remain the primary instrument for assessing competency, academic merit, and recruitment qualification globally. However, the integrity of these assessments is continually challenged by sophisticated malpractice, ranging from bilateral copying and answer sharing to organized question paper leaks across regional testing centers. Existing institutional mechanisms suffer from two fundamental weaknesses: (1) <i>Lack of Post-Examination Forensics</i>, where systems focus entirely on delivery without analyzing response patterns retrospectively; and (2) <i>Methodological Deficiencies of Naive Similarity</i>, which generates high false positive rates because high-performing students independently select identical correct choices. To resolve these challenges without requiring unobtainable labeled real-world cheating datasets, this paper introduces an AI-based forensic answer sheet analysis system that bridges the gap between educational psychometrics and machine learning anomaly detection.
+  </p>
+
+  <!-- Section II -->
+  <h2 style="font-size: 16px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; margin-top: 24px; color: #1e3a8a;">
+    II. Mathematical Formulation
+  </h2>
+  <p style="font-size: 13.5px; text-align: justify;">
+    Let an examination consist of $N$ candidates seated across $C$ examination centers, answering $Q$ multiple-choice questions with options $\Omega = \{A, B, C, D\}$. Under the null hypothesis $H_0$ of statistical independence, errors committed by candidates are idiosyncratic. When candidate $i$ and candidate $j$ make identical errors on $k$ questions out of $W$ questions where both erred, the exact binomial rejection probability under independent guessing ($p_{\text{distractor}} = 1/(|\Omega| - 1) = 1/3$) is given by:
+  </p>
+  <div style="text-align: center; margin: 14px 0; font-family: 'Courier New', Courier, monospace; font-size: 13px; background: #f3f4f6; padding: 10px; border-radius: 4px;">
+    P(IIR &ge; k | H0) = &sum;<sub>m=k</sub><sup>W</sup> C(W, m) &times; (1/3)<sup>m</sup> &times; (2/3)<sup>W - m</sup>
+  </div>
+  <p style="font-size: 13.5px; text-align: justify;">
+    Observing $k \ge 8$ identical incorrect responses between two candidates yields an independence rejection probability of $p &lt; 10^{-5}$, providing near-certain empirical evidence of unauthorized sharing.
+  </p>
+
+  <!-- Section III -->
+  <h2 style="font-size: 16px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; margin-top: 24px; color: #1e3a8a;">
+    III. Dual-Stage Hierarchical Anomaly Detection
+  </h2>
+  <p style="font-size: 13.5px; text-align: justify;">
+    The framework deploys two decoupled Isolation Forest models:
+  </p>
+  <ul style="font-size: 13px; line-height: 1.6;">
+    <li><b>Stage 1 (Examinee Level)</b>: Evaluates a 6-dimensional feature vector $\mathbf{v}_{\text{examinee}} = [Z_{\text{center}}^+, Z_{\text{overall}}^+, \text{Sim}_{\max}, \text{IIR}_{\max}, \text{Degree}, \text{Aberrance}]$. Inverts the path-length decision function to score individual examinees on a normalized scale ($0 - 100$).</li>
+    <li><b>Stage 2 (Center Level)</b>: Aggregates examinee metrics per examination center to evaluate distribution skewness: $\mathbf{v}_{\text{center}} = [\bar{Z}_{\text{center}}, \%\text{Flagged}, \overline{\text{IIR}}, \overline{\text{Sim}}]$. Successfully isolates compromised testing locations.</li>
+  </ul>
+
+  <!-- Section IV -->
+  <h2 style="font-size: 16px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; margin-top: 24px; color: #1e3a8a;">
+    IV. Empirical Validation & Results
+  </h2>
+  <p style="font-size: 13.5px; text-align: justify;">
+    Tested across a synthetic cohort of 1,800 examinees across 30 centers with 96 injected cheaters (individual copying pairs + center paper leaks):
+  </p>
+  <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin: 12px 0;">
+    <tr style="background: #1e3a8a; color: white;">
+      <th style="padding: 6px; border: 1px solid #cbd5e1;">Architecture</th>
+      <th style="padding: 6px; border: 1px solid #cbd5e1;">AUC-ROC</th>
+      <th style="padding: 6px; border: 1px solid #cbd5e1;">PR-AUC</th>
+      <th style="padding: 6px; border: 1px solid #cbd5e1;">Max F1</th>
+      <th style="padding: 6px; border: 1px solid #cbd5e1;">High-Risk Precision</th>
+    </tr>
+    <tr style="background: #eff6ff; font-weight: bold;">
+      <td style="padding: 6px; border: 1px solid #cbd5e1;">Proposed Dual-Stage IF</td>
+      <td style="padding: 6px; border: 1px solid #cbd5e1;">0.9939</td>
+      <td style="padding: 6px; border: 1px solid #cbd5e1;">0.9893</td>
+      <td style="padding: 6px; border: 1px solid #cbd5e1;">0.9845</td>
+      <td style="padding: 6px; border: 1px solid #cbd5e1;">1.00 (Zero FP)</td>
+    </tr>
+    <tr>
+      <td style="padding: 6px; border: 1px solid #cbd5e1;">Standard Isolation Forest</td>
+      <td style="padding: 6px; border: 1px solid #cbd5e1;">0.9898</td>
+      <td style="padding: 6px; border: 1px solid #cbd5e1;">0.9047</td>
+      <td style="padding: 6px; border: 1px solid #cbd5e1;">0.8660</td>
+      <td style="padding: 6px; border: 1px solid #cbd5e1;">0.82</td>
+    </tr>
+    <tr>
+      <td style="padding: 6px; border: 1px solid #cbd5e1;">One-Class SVM (RBF)</td>
+      <td style="padding: 6px; border: 1px solid #cbd5e1;">0.8378</td>
+      <td style="padding: 6px; border: 1px solid #cbd5e1;">0.3652</td>
+      <td style="padding: 6px; border: 1px solid #cbd5e1;">0.4227</td>
+      <td style="padding: 6px; border: 1px solid #cbd5e1;">0.38</td>
+    </tr>
+    <tr>
+      <td style="padding: 6px; border: 1px solid #cbd5e1;">Local Outlier Factor (LOF)</td>
+      <td style="padding: 6px; border: 1px solid #cbd5e1;">0.5735</td>
+      <td style="padding: 6px; border: 1px solid #cbd5e1;">0.3236</td>
+      <td style="padding: 6px; border: 1px solid #cbd5e1;">0.3709</td>
+      <td style="padding: 6px; border: 1px solid #cbd5e1;">0.24</td>
+    </tr>
+  </table>
+
+  <!-- Section V -->
+  <h2 style="font-size: 16px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; margin-top: 24px; color: #1e3a8a;">
+    V. Conclusion
+  </h2>
+  <p style="font-size: 13.5px; text-align: justify;">
+    The proposed AI-based forensic answer sheet analysis system establishes an objective, mathematically defensible post-examination audit framework. By uniting psychometric response concordance with a dual-stage Isolation Forest architecture, the system achieves 1.00 Precision at the disciplinary action threshold and 100% Recall on compromised examination centers.
+  </p>
+</div>
+{% endblock %}

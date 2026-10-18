@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Analysis Runs & History{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Forensic Analysis History</h1>
+    <div class="page-sub">Historical audit sessions and archived forensic datasets &bull; Total Runs: {{ runs|length }}</div>
+  </div>
+  <div style="display: flex; gap: 8px;">
+    <a href="{{ url_for('upload') }}" class="btn btn-primary">+ New Analysis Run</a>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Run ID</th>
+          <th>Dataset File</th>
+          <th>Analysis Timestamp</th>
+          <th>Candidates</th>
+          <th>Centers</th>
+          <th>Items</th>
+          <th>High-Risk Candidates</th>
+          <th>Compromised Centers</th>
+          <th>Audit Dossier Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if runs %}
+          {% for r in runs %}
+          <tr {% if active_run_id == r.id %}style="background: #f0fdf4;"{% endif %}>
+            <td>
+              <b>#{{ r.id }}</b>
+              {% if active_run_id == r.id %}<span class="badge badge-low" style="margin-left: 4px;">Active</span>{% endif %}
+            </td>
+            <td><b>{{ r.filename }}</b></td>
+            <td>{{ r.created_at }}</td>
+            <td>{{ r.n_students }}</td>
+            <td>{{ r.n_centers }}</td>
+            <td>{{ r.n_questions }}</td>
+            <td>
+              <span class="badge {% if r.n_high_students > 0 %}badge-high{% else %}badge-low{% endif %}">
+                {{ r.n_high_students }}
+              </span>
+            </td>
+            <td>
+              <span class="badge {% if r.n_high_centers > 0 %}badge-high{% else %}badge-low{% endif %}">
+                {{ r.n_high_centers }}
+              </span>
+            </td>
+            <td>
+              <div style="display: flex; gap: 6px;">
+                <a href="{{ url_for('dashboard', run_id=r.id) }}" class="btn btn-sm btn-primary">
+                  Dashboard
+                </a>
+                <a href="{{ url_for('report_pdf', run_id=r.id) }}" class="btn btn-sm btn-secondary">
+                  PDF
+                </a>
+                <form action="{{ url_for('delete_run_route', run_id=r.id) }}" method="post" style="display: inline;" onsubmit="return confirm('Delete Run #{{ r.id }} and all associated forensic records?');">
+                  <button type="submit" class="btn btn-sm btn-danger">
+                    Delete
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="9" style="text-align: center; color: var(--muted); padding: 24px;">
+              No analysis runs recorded yet. Upload a dataset or run a demonstration preset.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Sign In{% endblock %}
+{% block content %}
+<div style="max-width: 420px; margin: 60px auto;">
+  <div class="panel" style="padding: 32px; box-shadow: var(--shadow);">
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="font-size: 38px; margin-bottom: 8px;">⚖️</div>
+      <h2 style="margin: 0; font-size: 20px; color: #0f172a;">Examination Authority Portal</h2>
+      <p style="margin: 4px 0 0; font-size: 13px; color: var(--muted);">AI-Based Forensic Answer Sheet Malpractice Detection</p>
+    </div>
+
+    <form method="post" action="{{ url_for('login') }}">
+      <div class="form-group">
+        <label class="form-label" for="username">Username</label>
+        <input class="form-control" type="text" id="username" name="username" value="admin" required autofocus>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <input class="form-control" type="password" id="password" name="password" placeholder="••••••••" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 10px; margin-top: 8px; font-size: 14.5px;">
+        Authenticate & Access
+      </button>
+    </form>
+
+    <div style="margin-top: 24px; padding: 12px; background: #f8fafc; border-radius: 6px; border: 1px solid var(--line); font-size: 12px; color: var(--muted); text-align: center;">
+      <b>Demo Credentials:</b> Username: <code style="color: #1e3a8a;">admin</code> | Password: <code style="color: #1e3a8a;">admin123</code>
+    </div>
+  </div>
+</div>
+{% endblock %}
