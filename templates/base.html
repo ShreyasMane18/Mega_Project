@@ -25,7 +25,7 @@
       <a href="{{ url_for('pairs', run_id=active_run_id) if active_run_id else url_for('pairs') }}" class="{% if request.endpoint in ['pairs', 'pair_compare'] %}active{% endif %}">Collusion Pairs</a>
       <a href="{{ url_for('report_view', run_id=active_run_id) if active_run_id else url_for('report_view') }}" class="{% if request.endpoint == 'report_view' %}active{% endif %}">Report</a>
       <a href="{{ url_for('evaluation_view', run_id=active_run_id) if active_run_id else url_for('evaluation_view') }}" class="{% if request.endpoint == 'evaluation_view' %}active{% endif %}">Research Benchmark</a>
-      <a href="{{ url_for('paper_view') }}" class="{% if request.endpoint == 'paper_view' %}active{% endif %}">Research Paper</a>
+      <!-- <a href="{{ url_for('paper_view') }}" class="{% if request.endpoint == 'paper_view' %}active{% endif %}">Research Paper</a> -->
       <a href="{{ url_for('runs_list') }}" class="{% if request.endpoint == 'runs_list' %}active{% endif %}">Runs</a>
       <a href="{{ url_for('logout') }}" class="logout">Logout</a>
     </nav>
